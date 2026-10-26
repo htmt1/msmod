@@ -1,0 +1,19 @@
+LIBRARY version
+EXPORTS
+  GetFileVersionInfoA=wallet_proxy_GetFileVersionInfoA
+  GetFileVersionInfoByHandle=wallet_proxy_GetFileVersionInfoByHandle
+  GetFileVersionInfoExA=wallet_proxy_GetFileVersionInfoExA
+  GetFileVersionInfoExW=wallet_proxy_GetFileVersionInfoExW
+  GetFileVersionInfoSizeA=wallet_proxy_GetFileVersionInfoSizeA
+  GetFileVersionInfoSizeExA=wallet_proxy_GetFileVersionInfoSizeExA
+  GetFileVersionInfoSizeExW=wallet_proxy_GetFileVersionInfoSizeExW
+  GetFileVersionInfoSizeW=wallet_proxy_GetFileVersionInfoSizeW
+  GetFileVersionInfoW=wallet_proxy_GetFileVersionInfoW
+  VerFindFileA=wallet_proxy_VerFindFileA
+  VerFindFileW=wallet_proxy_VerFindFileW
+  VerInstallFileA=wallet_proxy_VerInstallFileA
+  VerInstallFileW=wallet_proxy_VerInstallFileW
+  VerLanguageNameA=wallet_proxy_VerLanguageNameA
+  VerLanguageNameW=wallet_proxy_VerLanguageNameW
+  VerQueryValueA=wallet_proxy_VerQueryValueA
+  VerQueryValueW=wallet_proxy_VerQueryValueW
