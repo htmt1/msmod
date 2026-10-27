@@ -1,1 +1,1 @@
-188dd13f685acac5718bb0162f58d1a0701ebaf15e0132f85f8fb0d30b12e1ea  MoonWallet-v0.3.1.zip
+4e82cfe723874c9d75b933dd08b66c8a857aa906bde5bcacc70d272e6c4ba0e7  MoonWallet-v0.3.2.zip

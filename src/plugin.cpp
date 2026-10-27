@@ -315,7 +315,7 @@ void installGameHooks(){
     ok=hook(game::SessionUpdate,reinterpret_cast<void*>(sessionUpdate),reinterpret_cast<void**>(&originalUpdate))&&ok;
     if(ok){for(auto target:gameplayHooks){if(MH_EnableHook(target)!=MH_OK){ok=false;break;}}}
     if(!ok){rollbackGameplayHooks();log(L"フックの準備に失敗しました。Modは適用されていません。");return;}
-    log(L"Moon Wallet v0.3.1 experimental: ゲーム内UIとウォレットのフックを適用しました。F8で開けます。");
+    log(L"Moon Wallet v0.3.2 experimental: ゲーム内UIとウォレットのフックを適用しました。F8で開けます。");
 }
 using RuntimeInvoke=Obj(*)(Obj,Obj,void**,Obj*);
 RuntimeInvoke originalInvoke=nullptr;void* invokeTarget=nullptr;

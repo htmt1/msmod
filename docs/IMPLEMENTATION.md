@@ -68,3 +68,12 @@ In the exact supplied GameAssembly.dll, `il2cpp_gchandle_new` at RVA `0x299E50` 
 `gc_handles.hpp` now uses `uintptr_t` throughout the three runtime function pointers, retained keys, root lists and saved focus. `gc_handle_tests.cpp` exercises real high-address pointer handles through widget storage, focus restoration and release. `gc_handle_abi_tests.py` executes a compiled Windows x64 fixture using the same production handle code and a pointer-backed handle above 4 GiB. It checks all three calls and the returned managed object. A negative control compiled with the former 32-bit handle types fails that same ABI test with a truncated handle, while the corrected build passes. ASan/UBSan checks pass; LeakSanitizer was disabled because this sandbox uses ptrace. UI initialization/HUD/screen milestones were added to the log for further troubleshooting. Gameplay hook installation also preserves earlier UI hook failures rather than overwriting the aggregate success flag.
 
 The correction passes compilation and the automated checks. The corrected Windows game UI and world-loading path remain unexecuted in this development environment.
+
+
+## v0.3.2 HUD spacing and focus polish
+
+The user's v0.3.1 screenshot shows the HUD button obscuring the vanilla money/coin display. The button moves from `(1594, 984, 276, 50)` to `(1634, 874, 236, 42)` in the game's fitted 1920×1080 workshop frame. Its right edge remains at 1870 (a 50-unit margin), its bottom moves from 1034 to 916, and it is hidden while the wallet panel is open. Temporary receipt labels are shortened to fit the compact button. The original game HUD is not moved or hidden by the mod.
+
+Opening the panel now refreshes the visible group before selecting its controls. Selecting an amount shortcut returns focus to the native input field. Review selects Back only after the review controls are active; Esc uses the same Back path as the button and returns input focus consistently. A successful open clears the previous blocked-open notice. UI failures also hide the disabled HUD button. All these changes reuse existing validated game APIs and preserve the ledger/protocol/save format. The 64-bit GC-handle correction is retained.
+
+Existing logic and ABI checks pass; this environment cannot run the actual Windows UI. Visual spacing across aspect ratios, pointer focus and the original HUD in vehicle/build modes remain manual integration checks.

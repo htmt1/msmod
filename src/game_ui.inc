@@ -14,6 +14,7 @@ Key formRoot,reviewRoot,reviewName,reviewAmount,reviewRemaining,confirmButton,ba
 Key rowButtons[walletui::Model::Rows],prevButton,nextButton,ownedEventSystem,priorSelection,closeButton,againButton;
 enum class Action{Toggle,Close,Select,Prev,Next,Quick,All,Review,Back,Confirm,Again};
 struct Click{Action action;uint64_t value=0;};std::map<Obj,Click> clicks;
+void refresh();
 using Press=void(*)(Obj,void*);Press originalPress=nullptr;
 using TypingGet=bool(*)(void*);TypingGet originalTypingGet=nullptr;
 using TypingSet=void(*)(bool,void*);TypingSet originalTypingSet=nullptr;
@@ -62,7 +63,8 @@ void init(){
 Key stage(Key& owner,Key& root,const wchar_t* name,int order,bool tint){owner=keep(api.create(kitClass));auto f=keep(call(kitClass,"Stage",obj(owner),{nullptr,api.text(name),&order,&tint}));root=keep(api.field<Obj>(kitClass,"root",obj(owner)));call(objectClass,"DontDestroyOnLoad",nullptr,{obj(root)});return f;}
 void buildHud(){
     log(L"ゲーム内UI: HUDを作成します。");
-    auto f=stage(hudKit,hudRoot,L"MoonWallet.Hud",120,false);float x=1594,y=984,w=276,h=50;bool primary=false;
+    // Leave the bottom-right money/coin HUD unobstructed, with the same right margin.
+    auto f=stage(hudKit,hudRoot,L"MoonWallet.Hud",120,false);float x=1634,y=874,w=236,h=42;bool primary=false;
     hudButton=keep(call(kitClass,"Button",obj(hudKit),{obj(f),api.text(L"ウォレット"),api.text(L"F8"),&x,&y,&w,&h,nullptr,&primary}));clicks[obj(hudButton)]={Action::Toggle,0};
     log(L"ゲーム内UI: HUDの作成が完了しました。");
 }
@@ -107,6 +109,7 @@ void inputText(const std::wstring& value){model.input=value;call(inputClass,"Set
 void close(){
     if(!open)return;
     open=false;inputHeld=false;bool clear=true;call(inputClass,"DeactivateInputField",obj(amountField),{&clear});showRoot(panelRoot,false);
+    showRoot(hudRoot,active&&!fatal);
     originalTypingSet(priorTyping,nullptr);originalVisibleSet(priorVisible,nullptr);originalLockSet(priorLock,nullptr);
     auto es=call(eventClass,"get_current",nullptr);auto previous=obj(priorSelection);if(es)call(eventClass,"SetSelectedGameObject",es,{alive(previous)?previous:nullptr});
     if(priorSelection.handle){api.release(priorSelection.handle);priorSelection={};}
@@ -122,7 +125,9 @@ void openScreen(){
     if(!built)buildScreen();
     auto cursor=api.type("UnityEngine","Cursor");priorVisible=api.value<bool>(call(cursor,"get_visible",nullptr));priorLock=api.value<int>(call(cursor,"get_lockState",nullptr));priorTyping=originalTypingGet(nullptr);
     ensureEventSystem();auto es=call(eventClass,"get_current",nullptr);auto selected=es?call(eventClass,"get_currentSelectedGameObject",es):nullptr;if(selected)priorSelection={api.retain(selected)};
-    open=true;inputHeld=true;originalTypingSet(true,nullptr);originalLockSet(0,nullptr);originalVisibleSet(true,nullptr);showRoot(panelRoot,true);nextRefresh=0;
+    open=true;inputHeld=true;originalTypingSet(true,nullptr);originalLockSet(0,nullptr);originalVisibleSet(true,nullptr);showRoot(panelRoot,true);showRoot(hudRoot,false);notice.clear();nextRefresh=0;
+    // Populate and enable the current group before selecting any of its controls.
+    refresh();
     if(model.step==walletui::Step::Draft&&model.selected)call(inputClass,"ActivateInputField",obj(amountField));else if(model.step==walletui::Step::Confirm)focus(backButton);
     else if(model.step==walletui::Step::Result)focus(againButton);
     else if(model.step==walletui::Step::Draft&&!model.recipients.empty())focus(rowButtons[0]);
@@ -174,23 +179,24 @@ void dispatch(Click click){
     if(click.action==Action::Review)model.input=api.string(call(inputClass,"get_text",obj(amountField)));
     switch(click.action){
     case Action::Close:close();return;
-    case Action::Select:if(model.step==walletui::Step::Draft){model.selected=click.value;notice.clear();call(inputClass,"ActivateInputField",obj(amountField));}break;
+    case Action::Select:if(model.step==walletui::Step::Draft){model.selected=click.value;notice.clear();}break;
     case Action::Prev:if(model.page)--model.page;break;
     case Action::Next:if((model.page+1)*walletui::Model::Rows<model.recipients.size())++model.page;break;
     case Action::Quick:if(model.step==walletui::Step::Draft)inputText(walletui::amount(click.value));break;
     case Action::All:if(model.step==walletui::Step::Draft)inputText(walletui::amount(model.available));break;
-    case Action::Review:if(model.confirm(synchronized())){notice.clear();bool clear=true;call(inputClass,"DeactivateInputField",obj(amountField),{&clear});focus(backButton);}break;
+    case Action::Review:if(model.confirm(synchronized())){notice.clear();bool clear=true;call(inputClass,"DeactivateInputField",obj(amountField),{&clear});}break;
     case Action::Back:model.back();break;
     case Action::Confirm:refresh();if(!pending.request&&model.beginSend(synchronized())){uiCommand={win::timeId(),model.review.target,0,int64_t(model.review.cents),0};notice.clear();}break;
     case Action::Again:model.again();notice.clear();inputText(L"");break;
     default:break;
     }nextRefresh=0;refresh();
-    if(click.action==Action::Back||click.action==Action::Again)call(inputClass,"ActivateInputField",obj(amountField));
+    if(click.action==Action::Review&&model.step==walletui::Step::Confirm)focus(backButton);
+    if(model.step==walletui::Step::Draft&&(click.action==Action::Select||click.action==Action::Quick||click.action==Action::All||click.action==Action::Back||click.action==Action::Again))call(inputClass,"ActivateInputField",obj(amountField));
 }
 void problem(const std::exception& e){
     log(L"ゲーム内UIエラー: "+win::utf16(e.what()));
     if(open){open=false;inputHeld=false;originalTypingSet(priorTyping,nullptr);originalVisibleSet(priorVisible,nullptr);originalLockSet(priorLock,nullptr);}
-    try{if(panelRoot.handle)showRoot(panelRoot,false);}catch(...){}unavailable=true;
+    try{if(panelRoot.handle)showRoot(panelRoot,false);if(hudRoot.handle)showRoot(hudRoot,false);}catch(...){}unavailable=true;
 }
 void onPress(Obj button,void* method){
     auto found=clicks.find(button);if(found==clicks.end()){originalPress(button,method);return;}
@@ -214,13 +220,13 @@ void tick(){
     try{if(!active||fatal){if(open)close();if(hudRoot.handle)showRoot(hudRoot,false);return;}
         if(!initialized)init();
         if(previousWorld!=currentWorld||previousEpoch!=epoch){if(open)close();previousWorld=currentWorld;previousEpoch=epoch;model={};notice.clear();if(built)inputText(L"");}
-        if(!hudRoot.handle)buildHud();showRoot(hudRoot,true);call(kitClass,"Fit",obj(hudKit));
+        if(!hudRoot.handle)buildHud();showRoot(hudRoot,!open);call(kitClass,"Fit",obj(hudKit));
         if(pressed("get_f8Key")){if(open)close();else openScreen();}
-        if(open&&pressed("get_escapeKey")){if(model.step==walletui::Step::Confirm)model.back();else close();nextRefresh=0;}
+        if(open&&pressed("get_escapeKey")){if(model.step==walletui::Step::Confirm)dispatch({Action::Back,0});else close();nextRefresh=0;}
         if(open&&model.step==walletui::Step::Draft){auto value=api.string(call(inputClass,"get_text",obj(amountField)));if(value!=model.input){model.input=value;notice.clear();nextRefresh=0;}
             // Enter only advances to review. Actual transfers require the explicit Confirm button.
             if(api.value<bool>(call(inputClass,"get_isFocused",obj(amountField)))&&(pressed("get_enterKey")||pressed("get_numpadEnterKey")))dispatch({Action::Review,0});}
-        auto now=GetTickCount64();if(now>=nextRefresh){refresh();nextRefresh=now+150;auto title=resultUntil>now&&model.step==walletui::Step::Result?(resultOk?L"送金が完了しました":L"送金結果を確認"):L"ウォレット";setButton(hudButton,title,true);}
+        auto now=GetTickCount64();if(now>=nextRefresh){refresh();nextRefresh=now+150;auto title=resultUntil>now&&model.step==walletui::Step::Result?(resultOk?L"送金完了":L"結果を見る"):L"ウォレット";setButton(hudButton,title,true);}
     }catch(const std::exception& e){problem(e);}
 }
 }
