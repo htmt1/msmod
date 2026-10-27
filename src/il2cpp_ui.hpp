@@ -1,5 +1,6 @@
 #pragma once
 #include "windows_util.hpp"
+#include "gc_handles.hpp"
 #include <map>
 #include <tuple>
 #include <stdexcept>
@@ -23,9 +24,7 @@ class Api {
     Object(*classType)(Class)=nullptr;
     Object(*typeObject)(Object)=nullptr;
     Object(*stringNew)(const wchar_t*,int32_t)=nullptr;
-    uint32_t(*handleNew)(Object,bool)=nullptr;
-    Object(*handleTarget)(uint32_t)=nullptr;
-    void(*handleFree)(uint32_t)=nullptr;
+    GcHandles handles;
     Object(*fieldName)(Class,const char*)=nullptr;
     void(*fieldGet)(Object,Object,void*)=nullptr;
     void(*staticGet)(Object,void*)=nullptr;
@@ -40,7 +39,7 @@ public:
         bind(module,methodName,"il2cpp_class_get_method_from_name");bind(module,methodFlags,"il2cpp_method_get_flags");bind(module,virtualMethod,"il2cpp_object_get_virtual_method");
         bind(module,invoke,"il2cpp_runtime_invoke");bind(module,unbox,"il2cpp_object_unbox");bind(module,allocate,"il2cpp_object_new");bind(module,classInit,"il2cpp_runtime_class_init");
         bind(module,classType,"il2cpp_class_get_type");bind(module,typeObject,"il2cpp_type_get_object");bind(module,stringNew,"il2cpp_string_new_utf16");
-        bind(module,handleNew,"il2cpp_gchandle_new");bind(module,handleTarget,"il2cpp_gchandle_get_target");bind(module,handleFree,"il2cpp_gchandle_free");
+        bind(module,handles.create,"il2cpp_gchandle_new");bind(module,handles.get,"il2cpp_gchandle_get_target");bind(module,handles.free,"il2cpp_gchandle_free");
         bind(module,fieldName,"il2cpp_class_get_field_from_name");bind(module,fieldGet,"il2cpp_field_get_value");bind(module,staticGet,"il2cpp_field_static_get_value");bind(module,formatException,"il2cpp_format_exception");
     }
     Class type(const char* ns,const char* name){
@@ -68,8 +67,8 @@ public:
     Object create(Class klass){classInit(klass);auto value=allocate(klass);if(!value)throw std::runtime_error("UI allocation failed");call(klass,".ctor",value);return value;}
     Object reflectionType(Class klass){return typeObject(classType(klass));}
     template<class T>T field(Class klass,const char* name,Object self){auto f=fieldName(klass,name);if(!f)throw std::runtime_error(std::string("UI field unavailable: ")+name);T value{};if(self)fieldGet(self,f,&value);else{classInit(klass);staticGet(f,&value);}return value;}
-    uint32_t retain(Object object){if(!object)return 0;return handleNew(object,false);}
-    Object target(uint32_t handle){return handle?handleTarget(handle):nullptr;}
-    void release(uint32_t handle){if(handle)handleFree(handle);}
+    GcHandle retain(Object object){return handles.retain(object);}
+    Object target(GcHandle handle){return handles.target(handle);}
+    void release(GcHandle handle){handles.release(handle);}
 };
 }

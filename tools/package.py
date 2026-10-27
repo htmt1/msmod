@@ -8,7 +8,7 @@ runtime={
     'MoonWallet/plugins/MoonWallet.dll':root/'dist/MoonWallet.dll',
 }
 docs=['README.md','THIRD_PARTY_NOTICES.md','docs/TESTING.ja.md','docs/IMPLEMENTATION.md','third_party/minhook/LICENSE.txt']
-output=root/'dist/MoonWallet-v0.3.0-ingame-ui-experimental.zip'
+output=root/'dist/MoonWallet-v0.3.1-ingame-ui-experimental.zip'
 with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as z:
     for arc,path in runtime.items():z.write(path,arc)
     for path in docs:z.write(root/path,path)

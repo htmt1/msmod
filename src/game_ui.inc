@@ -1,12 +1,12 @@
 // Native uGUI/TMP screen using Moon Sweepers' own workshop assets.
 namespace ingame {
 using gameui::Color;using gameui::Class;
-struct Key{uint32_t handle=0;};
+using Key=gameui::RootKey;
 gameui::Api api;walletui::Model model;
 std::atomic<bool> inputHeld{false};
 bool initialized=false,unavailable=false,open=false,built=false,priorVisible=false,priorTyping=false,resultOk=false,focusResult=false;
 int priorLock=0;Obj previousWorld=nullptr;uint64_t nextRefresh=0,resultUntil=0,previousEpoch=0;
-std::wstring notice,resultText;std::vector<uint32_t> roots;std::map<Obj,std::wstring> labelValues;
+std::wstring notice,resultText;std::vector<gameui::GcHandle> roots;std::map<Obj,std::wstring> labelValues;
 Class kitClass=nullptr,textClass=nullptr,componentClass=nullptr,goClass=nullptr,objectClass=nullptr,inputClass=nullptr,eventClass=nullptr,buttonClass=nullptr;
 Color cream{},muted{},cyan{},orange{},green{},red{};
 Key kit,frame,panelRoot,hudKit,hudRoot,hudButton,balanceText,rosterTitle,recipientTitle,recipientId,amountField,hintText,remainingText,pageText,reviewButton,statusText;
@@ -49,6 +49,7 @@ void focus(Key k){auto es=call(eventClass,"get_current",nullptr);if(es)call(even
 std::wstring money(Dec v){return api.string(call(api.type("MoonCleaners","MoonWorld"),"FormatMoney",nullptr,{&v}));}
 bool pressed(const char* key){auto c=api.type("UnityEngine.InputSystem","Keyboard");auto keyboard=call(c,"get_current",nullptr);if(!keyboard)return false;auto control=call(c,key,keyboard);if(!control)return false;return api.value<bool>(call(api.type("UnityEngine.InputSystem.Controls","ButtonControl"),"get_wasPressedThisFrame",control));}
 void init(){
+    log(L"ゲーム内UI: 初期化を開始します（64bit GCハンドル）。");
     api.init(reinterpret_cast<HMODULE>(base));
     for(auto& need:gameui::Contract){auto c=api.type(need.ns,need.type);if(need.method)api.method(c,need.method,need.count);}
     kitClass=api.type("MoonCleaners","MoonWorkshopKit");textClass=api.type("TMPro","TMP_Text");
@@ -56,11 +57,14 @@ void init(){
     inputClass=api.type("TMPro","TMP_InputField");eventClass=api.type("UnityEngine.EventSystems","EventSystem");buttonClass=api.type("UnityEngine.UI","Button");
     cream=api.field<Color>(kitClass,"Cream",nullptr);muted=api.field<Color>(kitClass,"Muted",nullptr);cyan=api.field<Color>(kitClass,"Cyan",nullptr);
     orange=api.field<Color>(kitClass,"Orange",nullptr);green=api.field<Color>(kitClass,"Green",nullptr);red=api.field<Color>(kitClass,"Red",nullptr);initialized=true;
+    log(L"ゲーム内UI: APIと配色の準備が完了しました。");
 }
 Key stage(Key& owner,Key& root,const wchar_t* name,int order,bool tint){owner=keep(api.create(kitClass));auto f=keep(call(kitClass,"Stage",obj(owner),{nullptr,api.text(name),&order,&tint}));root=keep(api.field<Obj>(kitClass,"root",obj(owner)));call(objectClass,"DontDestroyOnLoad",nullptr,{obj(root)});return f;}
 void buildHud(){
+    log(L"ゲーム内UI: HUDを作成します。");
     auto f=stage(hudKit,hudRoot,L"MoonWallet.Hud",120,false);float x=1594,y=984,w=276,h=50;bool primary=false;
     hudButton=keep(call(kitClass,"Button",obj(hudKit),{obj(f),api.text(L"ウォレット"),api.text(L"F8"),&x,&y,&w,&h,nullptr,&primary}));clicks[obj(hudButton)]={Action::Toggle,0};
+    log(L"ゲーム内UI: HUDの作成が完了しました。");
 }
 void ensureEventSystem(){
     if(alive(call(eventClass,"get_current",nullptr)))return;
@@ -69,6 +73,7 @@ void ensureEventSystem(){
     auto c=api.type("UnityEngine.InputSystem.UI","InputSystemUIInputModule");auto module=call(goClass,"AddComponent",obj(ownedEventSystem),{api.reflectionType(c)});call(c,"AssignDefaultActions",module);
 }
 void buildScreen(){
+    log(L"ゲーム内UI: 送金画面を作成します。");
     frame=stage(kit,panelRoot,L"MoonWallet.Screen",900,true);auto root=obj(frame);
     plate(root,L"Wallet",362,138,1196,804,true);text(root,L"CREW / PERSONAL FUNDS",410,176,780,26,15,muted);
     text(root,L"ウォレット",408,210,750,60,46,cream,true);closeButton=button(root,L"閉じる",L"Esc",1332,198,172,48,Action::Close);
@@ -96,6 +101,7 @@ void buildScreen(){
     againButton=button(result,L"続けて送金",L"",28,326,302,50,Action::Again,0,true);button(result,L"ゲームに戻る",L"Esc",430,326,280,50,Action::Close);
     statusText=text(root,L"",410,846,1098,42,17,muted);text(root,L"F8  ウォレットの開閉     /     Esc  戻る・閉じる",410,894,1098,25,14,muted);
     showRoot(panelRoot,false);built=true;
+    log(L"ゲーム内UI: 送金画面の作成が完了しました。");
 }
 void inputText(const std::wstring& value){model.input=value;call(inputClass,"SetTextWithoutNotify",obj(amountField),{api.text(value)});}
 void close(){

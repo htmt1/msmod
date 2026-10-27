@@ -8,3 +8,4 @@ bash tools/test.sh
 .tools/bin/python tools/validate_artifacts.py
 
 .tools/bin/python tests/proxy_abi_tests.py
+.tools/bin/python tests/gc_handle_abi_tests.py

@@ -1,12 +1,14 @@
 # Moon Wallet — Moon Sweepers 個人ウォレットMod
 
-**v0.3.0 ゲーム内UI版・実機検証前の試験版 / Windows 64bit専用**
+**v0.3.1 ゲーム内UI版・実機検証前の試験版 / Windows 64bit専用**
 
 共有所持金をSteam IDごとの個人残高に分け、同じロビーの参加者へ金額を指定して送金するネイティブModです。添付されたUnity 6000.6.0f1のゲームビルド専用です。ゲーム更新でバイナリが変わった場合は読み込みを拒否します。
 
 ## ダウンロード
 
-[ゲーム内UI版 v0.3.0 ZIP](https://github.com/htmt1/msmod/raw/refs/heads/moonwallet-v0.3.0-ingame-ui/downloads/MoonWallet-v0.3.0.zip)
+[ワールド読み込み時のクラッシュ修正版 v0.3.1 ZIP](https://github.com/htmt1/msmod/raw/refs/heads/moonwallet-v0.3.1-world-crash-fix/downloads/MoonWallet-v0.3.1.zip)
+
+v0.3.1では、ワールド読み込み後にUIを作成する際、Unityの64bit GCハンドルを32bitへ切り詰めていた不具合を修正しました。ゲーム本体の64bit APIと照合し、上位32bitを持つハンドルの保持・参照・解放をC++単体テストとWindows x64機械語エミュレーションで確認しています。修正後のWindowsゲーム実機での再確認はまだ行っていません。
 
 ## 導入・起動（EXE不要）
 
@@ -26,7 +28,7 @@ Moon Sweepers/
 3. Steamから普段どおりゲームを起動し、セーブを読み込みます。**別のEXEや外部ウィンドウは不要です。** プレイ画面に「F8 ウォレット」が表示されます。
 4. 次回からもSteamから起動するだけです。マルチプレイでは、**ホストと参加者の全員に同じ版を配置**してください。
 
-**v0.2から更新する場合は、ゲーム終了後に、このModの `version.dll` と `MoonWallet/plugins/MoonWallet.dll` を上書きしてください。既存の個人残高データはそのまま使います。**
+**v0.2／v0.3.0から更新する場合は、ゲーム終了後に、このModの `version.dll` と `MoonWallet/plugins/MoonWallet.dll` を上書きしてください。既存の個人残高データはそのまま使います。**
 
 前版の `MoonWallet.exe` は不要です。旧版の `MoonWallet.dll` をゲーム直下にも置いていた場合は、旧版の2ファイルを削除してから上記の配置に変更してください。ゲーム本来のDLLは置き換えません。
 
@@ -73,7 +75,7 @@ Unity/Windowsがゲームフォルダー内の `version.dll` を読み込む構�
 
 ## 検証状況
 
-確認済み：ゲーム内UIで使用する60メソッド・12フィールド・19クラスと提供メタデータの照合、送金画面の遷移・相手退出・残高変更・確認内容の固定のテスト、外部ウィンドウ用APIをインポートしていないことの確認、提供DLL・メタデータの解析、Windows x64のプラグイン／自動ローダーのビルド、個人残高の分離と送金台帳の単体テスト、残高不足・金額検証・再送・保存失敗時のロールバック・保存データの破損検知、出力バイナリの形式と依存DLL、起動対象コールバックの判定、ローダーの17関数すべての引数転送（x64機械語エミュレーション）。
+確認済み：64bit GCハンドルの保持・参照・解放（ネイティブテストとWindows x64 ABIエミュレーション）、ゲーム内UIで使用する60メソッド・12フィールド・19クラスと提供メタデータの照合、送金画面の遷移・相手退出・残高変更・確認内容の固定のテスト、外部ウィンドウ用APIをインポートしていないことの確認、提供DLL・メタデータの解析、Windows x64のプラグイン／自動ローダーのビルド、個人残高の分離と送金台帳の単体テスト、残高不足・金額検証・再送・保存失敗時のロールバック・保存データの破損検知、出力バイナリの形式と依存DLL、起動対象コールバックの判定、ローダーの17関数すべての引数転送（x64機械語エミュレーション）。
 
 **未確認：Windowsゲーム上での実描画、入力・フォーカス・カーソル復帰、各解像度での配置、購入／報酬処理へのフック、Steamを介した2人以上の同期、実際のセーブ／再参加。** この開発環境には実行可能なゲーム一式とWindowsがないため、動作保証済みの完成版ではありません。[実機確認手順](docs/TESTING.ja.md)で確認してください。
 
@@ -94,6 +96,7 @@ ZIG="$PWD/.tools/lib/python$(.tools/bin/python -c 'import sys; print(f"{sys.vers
 bash tools/test.sh
 .tools/bin/python tools/validate_artifacts.py
 .tools/bin/python tests/proxy_abi_tests.py
+.tools/bin/python tests/gc_handle_abi_tests.py
 ```
 
 配布ZIPを作る場合は `.tools/bin/python tools/package.py` を実行します。解析元のゲームDLL・メタデータは配布物やGitに含めません。

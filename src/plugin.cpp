@@ -303,7 +303,7 @@ void installGameHooks(){
     ok=hook(game::ui::BlocksGameplay,reinterpret_cast<void*>(ingame::blocks),reinterpret_cast<void**>(&ingame::originalBlocks))&&ok;
     ok=hook(game::ui::CursorLockSet,reinterpret_cast<void*>(ingame::setLock),reinterpret_cast<void**>(&ingame::originalLockSet))&&ok;
     ok=hook(game::ui::CursorVisibleSet,reinterpret_cast<void*>(ingame::setVisible),reinterpret_cast<void**>(&ingame::originalVisibleSet))&&ok;
-    ok=hook(game::WalletSet,reinterpret_cast<void*>(setWallet),reinterpret_cast<void**>(&originalSet));
+    ok=hook(game::WalletSet,reinterpret_cast<void*>(setWallet),reinterpret_cast<void**>(&originalSet))&&ok;
     void* ignored=nullptr;
     ok=hook(game::WalletGet,reinterpret_cast<void*>(walletGet),reinterpret_cast<void**>(&originalGet))&&ok;
     ok=hook(game::WalletDollars,reinterpret_cast<void*>(worldGet),&ignored)&&ok;
@@ -315,7 +315,7 @@ void installGameHooks(){
     ok=hook(game::SessionUpdate,reinterpret_cast<void*>(sessionUpdate),reinterpret_cast<void**>(&originalUpdate))&&ok;
     if(ok){for(auto target:gameplayHooks){if(MH_EnableHook(target)!=MH_OK){ok=false;break;}}}
     if(!ok){rollbackGameplayHooks();log(L"フックの準備に失敗しました。Modは適用されていません。");return;}
-    log(L"Moon Wallet v0.3.0 experimental: ゲーム内UIとウォレットのフックを適用しました。F8で開けます。");
+    log(L"Moon Wallet v0.3.1 experimental: ゲーム内UIとウォレットのフックを適用しました。F8で開けます。");
 }
 using RuntimeInvoke=Obj(*)(Obj,Obj,void**,Obj*);
 RuntimeInvoke originalInvoke=nullptr;void* invokeTarget=nullptr;
